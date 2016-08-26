@@ -1,0 +1,22 @@
+{
+    "name": "sincco/curl",
+    "description": "Simple class for CURL implementation and DOM crawler",
+    
+    "license": "MIT",
+    "keywords": ["curl","sfphp","sincco"],
+    "version": "1.0",
+    "require": {
+        "php": "^5.3.3 || ^7.0"
+    },
+    "authors": [
+        {
+            "name": "Ivan Miranda",
+            "email": "ivan.miranda@sincco.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Sincco\\Tools\\": "src"
+        }
+    }
+}
