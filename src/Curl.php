@@ -23,17 +23,18 @@ class Curl
 {
     protected $handler;
     protected $options;
+    protected $header;
 
     public function __construct()
     {
         $this->options = [];
+        $this->header = [];
         $this->handler = null;
         $this->addOption(CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-        $this->addOption(CURLOPT_HEADER, true);
+        $this->addOption(CURLOPT_HEADER, false);
         $this->addOption(CURLOPT_RETURNTRANSFER, true);
         $this->addOption(CURLOPT_SSL_VERIFYPEER, true);
         $this->addOption(CURLOPT_FOLLOWLOCATION, 1);
-        // $this->addOption(CURLOPT_CAINFO, "/var/www/cacert.pem");
     }
 
     /**
@@ -53,6 +54,7 @@ class Curl
         foreach ($this->options as $option => $value) {
             curl_setopt($this->handler, $option, $value);
         }
+        curl_setopt($this->handler, CURLOPT_HTTPHEADER, $this->header);
     }
 
     /**
@@ -67,9 +69,11 @@ class Curl
      * @param  url string
      * @return string html content
      */
-    public function get($url)
+    public function get($url, $params = [])
     {
         $this->_init();
+        $this->addOption(CURLOPT_POST, count($params));
+        $this->addOption(CURLOPT_POSTFIELDS, $params);
         curl_setopt($this->handler, CURLOPT_URL, $url);
         $data = curl_exec($this->handler);
         curl_close($this->handler);
@@ -80,11 +84,38 @@ class Curl
      * @param  url string
      * @return simple_html_dom object
      */
-    public function getDom($url)
+    public function getDom($url, $params = [])
     {
-        $html = $this->get($url);
+        $html = $this->get($url, $params);
         return str_get_html($html);
 
+    }
+
+    /**
+     * @param  url string
+     * @return json object
+     */
+    public function getJson($url, $params = [])
+    {
+        $this->header[] = 'Content-Type: application/json';
+        if (count($params) > 0) {
+            $params = json_encode($params);
+            $this->header[] = 'Content-Length: ' . strlen($params);
+            $this->addOption(CURLOPT_POSTFIELDS, $params);
+        }
+        $this->_init();
+        curl_setopt($this->handler, CURLOPT_URL, $url);
+        $data = curl_exec($this->handler);
+        curl_close($this->handler);
+        return json_decode($data);
+    }
+
+    /**
+     * @param string Set custom authorization
+     */
+    public function setAuthorization($data)
+    {
+        $this->header[] = 'Authorization: '.$data;
     }
 
     /**
@@ -110,17 +141,10 @@ class Curl
     }
 
     /**
-     * @param params array
+     * @param method string Metod for consumption
      */
-    public function setPost($params)
+    public function setMethod($method)
     {
-        $fields_string = '';
-        foreach ($params as $key=>$value) { 
-            $fields_string .= $key.'='.$value.'&';
-            $params[$key] = urlencode($value);
-        }
-        rtrim($fields_string, '&');
-        $this->addOption(CURLOPT_POST, count($params));
-        $this->addOption(CURLOPT_POSTFIELDS, $fields_string);
+        $this->addOption(CURLOPT_CUSTOMREQUEST, $method);
     }
 }
